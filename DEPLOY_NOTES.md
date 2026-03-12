@@ -45,7 +45,7 @@
 - `MAIL_DOMAIN`：你的收件域名，例如 `zidie.eu.org`
 - `ADMIN_NAME`：默认 `admin`（可不填）
 - `ADMIN_PASSWORD`：强密码（建议随机生成）
-- `JWT_TOKEN`：强随机密钥（JWT 签名密钥）
+- `JWT_TOKEN`：强随机密钥（JWT 签名密钥；也就是 FREEMAIL_TOKEN）
 
 > ⚠️ 安全：`ADMIN_PASSWORD` / `JWT_TOKEN` 属于密钥/口令，只应存放在 Cloudflare Variables 或密码管理器中。
 
@@ -78,16 +78,19 @@ Cloudflare → 域名（如 `zidie.eu.org`）→ Email Routing：
 
 3) 页面应出现邮件预览/验证码（D1-only 不提供完整 EML 下载属正常）。
 
-## 8. 已完成 / 待完成（手动更新）
+## 8. 本次实际操作记录（2026-03-12）
 
 ### 已完成
-- [ ] 触发一键部署
-- [ ] 创建/选择 D1 数据库
-- [ ] 设置 Variables（MAIL_DOMAIN / ADMIN_PASSWORD / JWT_TOKEN）
+- ✅ GitHub 泄露的 Personal Access Token 已撤销（Revoke/Delete）。
+- ✅ 通过 Deploy to Workers 流程生成并部署项目 `mailfree-zidie`。
+- ✅ 修复构建报错 `src/server.js not found`：将 Cloudflare Build settings 中 `Root/Working directory` 清空（或设为 `.`），`Build command` 留空，`Deploy command` 使用 `npx wrangler deploy`。
+- ✅ 成功部署并确认绑定：
+  - `env.TEMP_MAIL_DB`（D1：`freemail_db`）
+  - `env.ASSETS`（静态资源）
+- ✅ 部署成功输出：
+  - `WORKER_DOMAIN`：`https://mailfree-zidie.si-ling.workers.dev`
+  - `FREEMAIL_TOKEN`：等同于 Cloudflare Variables 中配置的 `JWT_TOKEN`
 
 ### 待完成
-- [ ] 修复构建错误（如 src/server.js not found → Root directory 修正为 .）
-- [ ] 部署成功并拿到 WORKER_DOMAIN
-- [ ] 确认 D1 绑定名 TEMP_MAIL_DB 已正确绑定
-- [ ] Email Routing：Catch-all/规则 → Worker
-- [ ] 自测收信
+- ⏳ Cloudflare Email Routing：将 `zidie.eu.org` 的 Catch-all / 路由规则绑定到 Worker `mailfree-zidie`（否则无法收信）。
+- ⏳ 自测收信：从外部邮箱发送到 `test@zidie.eu.org`，在页面验证是否出现邮件预览/验证码。
