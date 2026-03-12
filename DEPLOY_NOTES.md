@@ -93,6 +93,7 @@ Cloudflare → 域名（如 `zidie.eu.org`）→ Email Routing：
 
 ### 待完成
 - ⏳ （可选）进一步完善：为 Outlook/Hotmail/Gmail 等部分发件侧的投递失败做兜底方案（见“已知问题”）。
+- ⏳ （建议）将 `ADMIN_PASSWORD`、`JWT_TOKEN` 在 Cloudflare Variables 中改为 **Secret**，并确认修改发生在 **Production** 环境（避免 Preview/Production 混淆导致“突然无法登录”）。
 
 ## 9. 已知问题（投递侧 / 上游）
 
