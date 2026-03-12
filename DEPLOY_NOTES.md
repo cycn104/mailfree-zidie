@@ -92,5 +92,17 @@ Cloudflare → 域名（如 `zidie.eu.org`）→ Email Routing：
   - `FREEMAIL_TOKEN`：等同于 Cloudflare Variables 中配置的 `JWT_TOKEN`
 
 ### 待完成
-- ⏳ Cloudflare Email Routing：将 `zidie.eu.org` 的 Catch-all / 路由规则绑定到 Worker `mailfree-zidie`（否则无法收信）。
-- ⏳ 自测收信：从外部邮箱发送到 `test@zidie.eu.org`，在页面验证是否出现邮件预览/验证码。
+- ⏳ （可选）进一步完善：为 Outlook/Hotmail/Gmail 等部分发件侧的投递失败做兜底方案（见“已知问题”）。
+
+## 9. 已知问题（投递侧 / 上游）
+
+- ✅ 已确认：Email Routing → Worker → D1 入库链路正常（使用可送达的外部邮箱发信已能在页面看到新邮件）。
+- ⚠️ Outlook/Hotmail（以及部分 Gmail 测试邮件）可能出现投递失败，Cloudflare Activity 显示为上游拒绝/限流：
+  - `S3150`：`550 5.7.1 ... part of their network is on our block list`（示例 IP：`104.30.10.222` / `104.30.10.101`）
+  - `S775`：`451 4.7.650 ... temporarily rate limited due to IP reputation`（示例 IP：`104.30.8.68`）
+
+这类问题发生在 Microsoft 上游过滤（Protocol Filter Agent）对 Cloudflare 相关 IP 的信誉/策略判断，通常**不是 Worker 代码或路由规则配置错误**。
+
+参考：
+- Cloudflare Email Routing Postmaster：https://developers.cloudflare.com/email-routing/postmaster/
+- Microsoft Postmaster：https://aka.ms/postmaster
