@@ -36,7 +36,24 @@ export function createRouter() {
     const SESSION_EXPIRE_DAYS = parseInt(env.SESSION_EXPIRE_DAYS, 10) || 7;
 
     try {
-      const body = await request.json();
+      // 兼容性：部分客户端/代理会用非标准编码或错误的 content-type，导致 request.json() 解析失败。
+      // 这里统一用 text() 读取，再尝试 JSON / x-www-form-urlencoded 解析，避免 400 Bad Request。
+      const raw = await request.text();
+      let body = {};
+      try {
+        body = raw ? JSON.parse(raw) : {};
+      } catch (_) {
+        try {
+          const params = new URLSearchParams(raw || '');
+          body = {
+            username: params.get('username') || params.get('user') || '',
+            password: params.get('password') || ''
+          };
+        } catch (_) {
+          body = {};
+        }
+      }
+
       const name = String(body.username || '').trim().toLowerCase();
       const password = String(body.password || '');
 
