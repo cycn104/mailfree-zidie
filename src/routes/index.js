@@ -65,6 +65,9 @@ export function createRouter() {
       // 这里不要对用户输入密码做 trim：避免密码末尾空格被误删（有些人会复制粘贴带空格）。
       // ADMIN_PASSWORD 我们已经做过 trim 来规避 Dashboard 粘贴换行问题。
       if (name === ADMIN_NAME && ADMIN_PASSWORD && password === ADMIN_PASSWORD) {
+        if (!JWT_TOKEN) {
+          return new Response('JWT_TOKEN missing', { status: 500 });
+        }
         let adminUserId = 0;
         try {
           const u = await DB.prepare('SELECT id FROM users WHERE username = ?').bind(ADMIN_NAME).all();
