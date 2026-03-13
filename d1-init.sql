@@ -75,6 +75,15 @@ CREATE TABLE IF NOT EXISTS sent_emails (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Worker 邮件事件错误记录（用于在没有 Tail/Logs 权限时排障）
+CREATE TABLE IF NOT EXISTS worker_errors (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL DEFAULT 'email',
+  message TEXT,
+  detail TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 创建索引
 
 -- mailboxes 索引

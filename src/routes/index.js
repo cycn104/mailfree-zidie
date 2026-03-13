@@ -27,22 +27,26 @@ export function createRouter() {
       return new Response('数据库连接失败', { status: 500 });
     }
     const ADMIN_NAME = String(env.ADMIN_NAME || 'admin').trim().toLowerCase();
-    const ADMIN_PASSWORD = env.ADMIN_PASSWORD || env.ADMIN_PASS || '';
-    const GUEST_PASSWORD = env.GUEST_PASSWORD || '';
-    const JWT_TOKEN = env.JWT_TOKEN || env.JWT_SECRET || '';
+    // 注意：Cloudflare Workers 的环境变量可能来自 Variables/Secrets。
+    // 为避免粘贴导致的空格/换行问题，这里统一 trim。
+    const ADMIN_PASSWORD = String(env.ADMIN_PASSWORD || env.ADMIN_PASS || '').trim();
+    const GUEST_PASSWORD = String(env.GUEST_PASSWORD || '').trim();
+    const JWT_TOKEN = String(env.JWT_TOKEN || env.JWT_SECRET || '').trim();
     // 从环境变量读取会话过期天数，默认7天
     const SESSION_EXPIRE_DAYS = parseInt(env.SESSION_EXPIRE_DAYS, 10) || 7;
 
     try {
       const body = await request.json();
       const name = String(body.username || '').trim().toLowerCase();
-      const password = String(body.password || '').trim();
+      const password = String(body.password || '');
 
       if (!name || !password) {
         return new Response('用户名或密码不能为空', { status: 400 });
       }
 
       // 1) 管理员
+      // 这里不要对用户输入密码做 trim：避免密码末尾空格被误删（有些人会复制粘贴带空格）。
+      // ADMIN_PASSWORD 我们已经做过 trim 来规避 Dashboard 粘贴换行问题。
       if (name === ADMIN_NAME && ADMIN_PASSWORD && password === ADMIN_PASSWORD) {
         let adminUserId = 0;
         try {
@@ -170,6 +174,33 @@ export function createRouter() {
   });
 
   // =================== API路由委托 ===================
+  // 只允许严格管理员读取 worker_errors（用于排障）
+  router.get('/api/debug/worker-errors', async (context) => {
+    const { env, authPayload } = context;
+    if (!authPayload) return new Response('Unauthorized', { status: 401 });
+
+    const ADMIN_NAME = String(env.ADMIN_NAME || 'admin').trim().toLowerCase();
+    const strictAdmin = (authPayload.role === 'admin') && (
+      String(authPayload.username || '').trim().toLowerCase() === ADMIN_NAME ||
+      String(authPayload.username || '') === '__root__'
+    );
+    if (!strictAdmin) return new Response('Forbidden', { status: 403 });
+
+    let DB;
+    try {
+      DB = await getDatabaseWithValidation(env);
+    } catch (_) {
+      return new Response('数据库连接失败', { status: 500 });
+    }
+
+    const url = new URL(context.request.url);
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 200);
+    const { results } = await DB.prepare(
+      'SELECT id, kind, message, detail, created_at FROM worker_errors ORDER BY id DESC LIMIT ?'
+    ).bind(limit).all();
+    return Response.json(results || []);
+  });
+
   router.get('/api/*', async (context) => {
     return await delegateApiRequest(context);
   });

@@ -187,6 +187,17 @@ export default {
         objectKey || ''
       ).run();
     } catch (err) {
+      // 不能依赖 Tail/Logs 权限时，将错误落库便于排障
+      try {
+        await DB.prepare(
+          `INSERT INTO worker_errors (kind, message, detail) VALUES (?, ?, ?)`
+        ).bind(
+          'email',
+          String(err?.message || err || ''),
+          String(err?.stack || '')
+        ).run();
+      } catch (_) {}
+
       console.error('Email event handling error:', err);
     }
   }
