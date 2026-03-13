@@ -252,12 +252,22 @@ export function extractVerificationCode({ subject = '', text = '', html = '' } =
     return '';
   }
 
+  // Some providers use 6-8 char alnum codes (must include at least one digit), e.g. IA8UCI
+  function normalizeAlnum(s) {
+    const t = String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (t.length < 6 || t.length > 8) return '';
+    if (!/[0-9]/.test(t)) return '';
+    return t;
+  }
+
   const kw = '(?:verification|one[-\\s]?time|two[-\\s]?factor|2fa|security|auth|login|confirm|code|otp|验证码|校验码|驗證碼|確認碼|認證碼|認証コード|인증코드|코드)';
   const sepClass = "[\\u00A0\\s\\-–—_.·•∙‧'']";
   const codeChunk = `([0-9](?:${sepClass}?[0-9]){3,7})`;
 
   const subjectOrdereds = [
     new RegExp(`${kw}[^\n\r\d]{0,20}(?<!\\d)${codeChunk}(?!\\d)`, 'i'),
+    // Alnum code in subject like: Your code is IA8UCI
+    new RegExp(`${kw}[^\n\r]{0,30}(?<![A-Z0-9])([A-Z0-9]{6,8})(?![A-Z0-9])`, 'i'),
     new RegExp(`(?<!\\d)${codeChunk}(?!\\d)[^\n\r\d]{0,20}${kw}`, 'i'),
   ];
   for (const r of subjectOrdereds) {
@@ -265,6 +275,8 @@ export function extractVerificationCode({ subject = '', text = '', html = '' } =
     if (m && m[1]) {
       const n = normalizeDigits(m[1]);
       if (n) return n;
+      const a = normalizeAlnum(m[1]);
+      if (a) return a;
     }
   }
 
@@ -277,6 +289,8 @@ export function extractVerificationCode({ subject = '', text = '', html = '' } =
     if (m && m[1]) {
       const n = normalizeDigits(m[1]);
       if (n) return n;
+      const a = normalizeAlnum(m[1]);
+      if (a) return a;
     }
   }
 
@@ -291,6 +305,8 @@ export function extractVerificationCode({ subject = '', text = '', html = '' } =
       if (n && !isLikelyNonVerificationCode(n, sources.body)) {
         return n;
       }
+      const a = normalizeAlnum(m[1]);
+      if (a) return a;
     }
   }
 
