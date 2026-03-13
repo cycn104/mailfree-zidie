@@ -183,7 +183,9 @@ export default {
         subject || '(无主题)',
         verificationCode || null,
         preview || null,
-        objectKey ? 'mail-eml' : null,
+        // 注意：messages.r2_bucket 在部分初始化脚本中是 NOT NULL。
+        // 当我们不存 R2 时，也要写入一个占位值，避免覆盖默认值为 NULL。
+        'mail-eml',
         objectKey || ''
       ).run();
     } catch (err) {
